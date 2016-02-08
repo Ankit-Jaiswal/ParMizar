@@ -7,7 +7,7 @@ object MizarLang {
   case class Identifier(name: String)
   case class FileName(name: String)
   case class Symbol(name: String)
-  case class Numerals(name: String)
+  case class Numeral(name: String)
 
 
   case class Article(environ: EnvironmentDeclaration, text: TextProper)
@@ -62,7 +62,7 @@ object MizarLang {
 
 
   sealed trait RegistrationBlock
-  sealed trait ClusterRegistration extends RegistrationBlock ////// subclass not declared
+  sealed trait ClusterRegistration extends RegistrationBlock
   case class IdentifyRegistration(identifyPatt: FunctorPattern,
         withPatt: FunctorPattern, locusState: List[LocusStatement],
         corrCond: CorrectConditions) extends RegistrationBlock
@@ -71,11 +71,11 @@ object MizarLang {
   case class ReductionRegistration(reduceTerm: TermExpression,
         toTerm: TermExpression, corrCond: CorrectConditions)
         extends RegistrationBlock
-  sealed trait AuxiliaryItem extends RegistrationBlock with DefinitionItem //// subclass not declared
+  sealed trait AuxiliaryItem extends RegistrationBlock with DefinitionItem
 
 
   sealed trait NotationBlock
-  case class LociDeclaration(qualVar: QualifiedVariable,
+  case class LociDeclaration(qualVar: QualifiedVariables,
         conds: List[Conditions]) extends RegistrationBlock with NotationBlock
         with DefinitionItem
   sealed trait NotationDeclaration extends NotationBlock
@@ -116,6 +116,10 @@ object MizarLang {
         extends ClusterRegistration
 
 
+  case class LocusStatement(locusequality: List[LocusEqLocus])
+  case class LocusEqLocus(locus: Locus, eqlocus: Locus)
+
+
   sealed trait Statement extends AuxiliaryItem
   sealed trait PrivateDefinition extends AuxiliaryItem
 
@@ -135,7 +139,6 @@ object MizarLang {
 
 
   case class Proposition(label: List[Identifier], sent: Sentence)
-  type Sentence = FormulaExpression
   sealed trait Justification
   sealed trait SimpleJustification extends Justification
   case class Proof(pf: Reasoning) extends Justification
@@ -163,11 +166,10 @@ object MizarLang {
   sealed trait Assumption
   case class SingleAssump(prop: Proposition) extends Assumption
   case class CollectiveAssump(conds: Conditions) extends Assumption
-  case class ExistentialAssump(qualVar: QualifiedVariable, optCond: List[Conditions])
+  case class ExistentialAssump(qualVar: QualifiedVariables, optCond: List[Conditions])
         extends Assumption
 
-  case class Locus(varIden: VariableIdentifier)
-  type VariableIdentifier = Identifier
+  case class Locus(varIden: VariableIdentifier) extends FunctorLoci
 
   case class FieldSegment(selectorSym: List[Symbol], spec: Specification)
 
@@ -178,11 +180,12 @@ object MizarLang {
   sealed trait ModeSubBlock
   case class CorrectConditions(condList: List[CorrectCondition],
         optjust: List[Justification]) extends ModeSubBlock
+  case class ModeExpr(typExp: TypeExpression) extends ModeSubBlock
 
   type ModeProperty = Justification
 
   sealed trait FunctorPattern
-  case class FuncSymbolLoci(opt1: List[FunctorLoci], funcSym: FunctorSymbol,
+  case class FuncSymbolLoci(opt1: List[FunctorLoci], funcSym: Symbol,
         opt2: List[FunctorLoci]) extends FunctorPattern
   case class FuncBracketLoci(lBracket: LeftFunctorBracket, loci: List[Locus],
         rBracket: RightFunctorBracket) extends FunctorPattern
@@ -192,7 +195,6 @@ object MizarLang {
   sealed trait Definiens
   case class SimpleDefiniens(optLabel: List[Identifier], sentExp: SentOrTerm)
         extends Definiens
-  sealed trait SentOrTerm
   case class ConditionalDefiniens(optLabel: List[Identifier],
         partialList: List[PartialDefiniens], optSentExp: List[SentOrTerm])
         extends Definiens
@@ -217,7 +219,7 @@ object MizarLang {
 
   case class CompactStatement(prop: Proposition, just: Justification)
         extends LinkableStatement
-  case class ChoiceStatement(qualVar: QualifiedVariable, conds: Conditions,
+  case class ChoiceStatement(qualVar: QualifiedVariables, conds: Conditions,
         just: SimpleJustification) extends LinkableStatement
   case class TypeChangingStatement(changeList: TypeChangeList,
         typExp: TypeExpression, just: SimpleJustification) extends LinkableStatement
@@ -243,69 +245,89 @@ object MizarLang {
 
 
 
-
-
-///// defining for compilation. Comment out as their original defitions gets defined.
-  case class TypeExpression() extends ModeSubBlock
-  case class LocusStatement()
-  case class TermExpression() extends SentOrTerm
-  case class QualifiedVariable()
-  case class TypeChangeList()
-  case class PrivateFunctorPattern()
-  case class PrivatePreicatePattern()
-  case class References()
-  case class SchemeReference()
+//// 4th layer expansion
+  sealed trait QualifiedVariables
+  case class ImpQualVariables(vars: Variables) extends QualifiedVariables
+  case class ExpQualVariables(qualSegs: List[QualifiedSegment])
+        extends QualifiedVariables
+  case class BothQualVariables(impVar: ImpQualVariables, expVar: ExpQualVariables)
+        extends QualifiedVariables
 
   type Conditions = List[Proposition]
 
-  case class PredicateSymbol()
-  case class PartialDefiniens()
-  case class AdjectiveArguments()
-  case class StructureTypeExpression()
-
-  case class Equating()
-  case class ModeSymbol()
-  case class FunctorLoci()
-  case class FunctorSymbol()
-  case class LeftFunctorBracket()
-  case class RightFunctorBracket()
-  case class ReasoningItems()
-
-  case class FormulaExpression() extends SentOrTerm
-
-
-}
-
-/*
-  sealed trait ModeBlock
-  case class SpecsDefCorrCond(specs: List[Specification],
-        defiens: List[Definiens], corrCond: CorrectConditions)
-        extends ModeBlock
-
-
-
-  sealed trait TermExpression
-
-
-
   sealed trait ModeSymbol
-
   case class ModeSym(sym: Symbol) extends ModeSymbol
-
   case object setSymbol extends ModeSymbol
 
-  sealed trait RadixType
+  sealed trait FunctorLoci
+  case class Loci(loci: List[Locus]) extends FunctorLoci
 
-  case class ModeRadixType(
-      mode: ModeSymbol,
-      l: List[TermExpression]) extends RadixType
+  sealed trait LeftFunctorBracket
+  case class LeftBracketSym(sym: Symbol) extends LeftFunctorBracket
+  case object LeftCurly extends LeftFunctorBracket
+  case object LeftSquare extends LeftFunctorBracket
 
-  case class StrucRadixType(
-      structureSymbol: Symbol,
-      l : List[TermExpression]) extends RadixType
-*/
+  sealed trait RightFunctorBracket
+  case class RightBracketSym(sym: Symbol) extends RightFunctorBracket
+  case object RightCurly extends RightFunctorBracket
+  case object RightSquare extends RightFunctorBracket
 
-//   case class PrivateDefinition(param: Char) extends TermExpression
+  sealed trait SentOrTerm
+  case class Sentence(expr: FormulaExpression) extends SentOrTerm
+  case class DefienTerm(term: TermExpression) extends SentOrTerm
+
+  case class PartialDefiniens(sentExp: SentOrTerm, sent: Sentence)
+
+  sealed trait PredicateSymbol
+  case class PredSym(sym: Symbol) extends PredicateSymbol
+  case object EqualitySym extends PredicateSymbol
+
+  case class AdjectiveArguments(termExps: List[TermExpression])
+
+  type TypeChangeList = List[EquatingOrVarIdent]
+  sealed trait EquatingOrVarIdent
+  case class Equating(varIden: VariableIdentifier, equalsTerm: TermExpression)
+        extends EquatingOrVarIdent
+  case class VariableIdentifier(varIden: Identifier) extends EquatingOrVarIdent
+
+  case class PrivateFunctorPattern(funcIden: FunctorIdentifier,
+        optExp: List[List[TypeExpression]])
+  case class FunctorIdentifier(iden: Identifier)
+
+  case class PrivatePreicatePattern(predIden: PredicateIdentifier,
+        optExp: List[List[TypeExpression]])
+  case class PredicateIdentifier(iden: Identifier)
 
 
-  //val p = P("a".!)
+  type References = List[Reference]
+  sealed trait Reference
+  case class LocalReference(label: Identifier) extends Reference
+  case class LibraryReference(articleName: FileName, index: List[ThmDefNum])
+
+  sealed trait ThmDefNum
+  case class TheoremNumber(num: Numeral) extends ThmDefNum
+  case class DefNumber(num: Numeral) extends ThmDefNum
+
+  sealed trait SchemeReference
+  case class LocalSchemeReference(schIden: Identifier) extends SchemeReference
+  case class LibrarySchemeReference(articleName: FileName, schNum: SchemeNum)
+        extends SchemeReference
+  case class SchemeNum(num: Numeral)
+
+
+
+
+
+///// defining for compilation. Comment out as their original defitions gets defined.
+  case class TypeExpression()
+  case class TermExpression()
+  case class QualifiedSegment()
+  case class Variables()
+
+  case class StructureTypeExpression()
+
+  case class ReasoningItems()
+
+  case class FormulaExpression()
+
+}
