@@ -1,5 +1,3 @@
-//package mizar
-
 import org.parboiled2._
 
 object MizarLang {
