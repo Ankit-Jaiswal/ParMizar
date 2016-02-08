@@ -80,8 +80,6 @@ object MizarLang {
         with DefinitionItem
   sealed trait NotationDeclaration extends NotationBlock
 
-  case class CompactStatement(prop: Proposition, just: Justification)
-
   case class SchemeBlock(schemeId: Identifier, schParameters: List[SchemeSegment],
     schConcl: Sentence, schPremise: List[List[Proposition]], reason: Reasoning)
 
@@ -168,37 +166,115 @@ object MizarLang {
   case class ExistentialAssump(qualVar: QualifiedVariable, optCond: List[Conditions])
         extends Assumption
 
+  case class Locus(varIden: VariableIdentifier)
+  type VariableIdentifier = Identifier
+
+  case class FieldSegment(selectorSym: List[Symbol], spec: Specification)
+
+  case class ModePattern(modeSym: ModeSymbol, optloci: List[List[Locus]])
+
+  case class ModeBlock(specs: List[Specification], defiens: List[Definiens],
+        subblock: ModeSubBlock)
+  sealed trait ModeSubBlock
+  case class CorrectConditions(condList: List[CorrectCondition],
+        optjust: List[Justification]) extends ModeSubBlock
+
+  type ModeProperty = Justification
+
+  sealed trait FunctorPattern
+  case class FuncSymbolLoci(opt1: List[FunctorLoci], funcSym: FunctorSymbol,
+        opt2: List[FunctorLoci]) extends FunctorPattern
+  case class FuncBracketLoci(lBracket: LeftFunctorBracket, loci: List[Locus],
+        rBracket: RightFunctorBracket) extends FunctorPattern
+
+  type Specification = TypeExpression
+
+  sealed trait Definiens
+  case class SimpleDefiniens(optLabel: List[Identifier], sentExp: SentOrTerm)
+        extends Definiens
+  sealed trait SentOrTerm
+  case class ConditionalDefiniens(optLabel: List[Identifier],
+        partialList: List[PartialDefiniens], optSentExp: List[SentOrTerm])
+        extends Definiens
+
+  type CorrectCondition = Justification
+
+  type FunctorProperty = Justification
+
+  case class PredicatePattern(opt1loci: List[List[Locus]], predSym: PredicateSymbol,
+        opt2loci: List[List[Locus]])
+
+  type PredicateProperty = Justification
+
+  case class AttributePattern(locus: Locus, optloci: List[List[Locus]],
+        attSym: Symbol)
+
+  case class Adjective(optArg: List[AdjectiveArguments], attSym: Symbol)
+
+  case class DiffuseStatement(optLabel: List[Identifier], reason: Reasoning)
+        extends Statement
+  sealed trait LinkableStatement extends Statement
+
+  case class CompactStatement(prop: Proposition, just: Justification)
+        extends LinkableStatement
+  case class ChoiceStatement(qualVar: QualifiedVariable, conds: Conditions,
+        just: SimpleJustification) extends LinkableStatement
+  case class TypeChangingStatement(changeList: TypeChangeList,
+        typExp: TypeExpression, just: SimpleJustification) extends LinkableStatement
+  case class IterativeEquality(optLabel: List[Identifier], termExp: TermExpression,
+        equalsTerm: List[TermAndJustification]) extends LinkableStatement
+  case class TermAndJustification(term: TermExpression, just: SimpleJustification)
+
+
+  case class ConstantDefinition(eqList: List[Equating]) extends PrivateDefinition
+  case class PrivateFunctorDefinition(patt: PrivateFunctorPattern,
+        term: TermExpression) extends PrivateDefinition
+  case class PrivatePredicateDefinition(patt: PrivatePreicatePattern,
+        sent: Sentence) extends PrivateDefinition
+
+
+  case class StraightforwardJustification(optReferences: List[References])
+        extends SimpleJustification
+  case class SchemeJustification(schRefer: SchemeReference,
+        optReferences: List[References]) extends SimpleJustification
+
+  case class Case(propList: List[Proposition], reason: Reasoning)
+  case class Suppose(propList: List[Proposition], reason: Reasoning)
+
+
 
 
 
 ///// defining for compilation. Comment out as their original defitions gets defined.
-    case class TypeExpression()
-    case class FunctorPattern()
-    case class LocusStatement()
-    case class CorrectConditions()
-    case class TermExpression()
-    case class QualifiedVariable()
-    case class Conditions()
+  case class TypeExpression() extends ModeSubBlock
+  case class LocusStatement()
+  case class TermExpression() extends SentOrTerm
+  case class QualifiedVariable()
+  case class TypeChangeList()
+  case class PrivateFunctorPattern()
+  case class PrivatePreicatePattern()
+  case class References()
+  case class SchemeReference()
 
-    case class StructureTypeExpression()
-    case class Locus()
-    case class FieldSegment()
-    case class ModePattern()
-    case class ModeBlock()
-    case class ModeProperty()
-    case class Specification()
-    case class Definiens()
-    case class FunctorProperty()
-    case class PredicatePattern()
-    case class PredicateProperty()
-    case class AttributePattern()
-    case class Adjective()
-    case class ReasoningItems()
+  type Conditions = List[Proposition]
 
-    case class FormulaExpression()
+  case class PredicateSymbol()
+  case class PartialDefiniens()
+  case class AdjectiveArguments()
+  case class StructureTypeExpression()
 
-    case class Case()
-    case class Suppose()
+  case class Equating()
+  case class ModeSymbol()
+  case class FunctorLoci()
+  case class FunctorSymbol()
+  case class LeftFunctorBracket()
+  case class RightFunctorBracket()
+  case class ReasoningItems()
+
+  case class FormulaExpression() extends SentOrTerm
+
+
+}
 
 /*
   sealed trait ModeBlock
@@ -233,4 +309,3 @@ object MizarLang {
 
 
   //val p = P("a".!)
-}
