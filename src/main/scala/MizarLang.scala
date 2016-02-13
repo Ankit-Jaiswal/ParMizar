@@ -88,7 +88,7 @@ object MizarLang {
 
 
   case class StructureDefinition(ancestors: List[StructureTypeExpression],
-        structSymbol: Symbol, locusList: List[Locus],
+        structSym: Symbol, locusList: List[Locus],
         fields: List[FieldSegment] ) extends Definition
   case class ModeDefinition(modePatt: ModePattern, modeBlock: ModeBlock,
         modeProp: List[ModeProperty] ) extends Definition with Redefinition
@@ -169,7 +169,7 @@ object MizarLang {
 
   case class Locus(varIden: VariableIdentifier) extends FunctorLoci
 
-  case class FieldSegment(selectorSym: List[Symbol], spec: Specification)
+  case class FieldSegment(selectSym: List[Symbol], spec: Specification)
 
   case class ModePattern(modeSym: ModeSymbol, optloci: List[List[Locus]])
 
@@ -246,13 +246,6 @@ object MizarLang {
 
 
 //// 4th layer expansion
-  sealed trait QualifiedVariables
-  case class ImpQualVariables(vars: Variables) extends QualifiedVariables
-  case class ExpQualVariables(qualSegs: List[QualifiedSegment])
-        extends QualifiedVariables
-  case class BothQualVariables(impVar: ImpQualVariables, expVar: ExpQualVariables)
-        extends QualifiedVariables
-
   case class Conditions(props: List[Proposition])
 
   sealed trait ModeSymbol
@@ -282,13 +275,12 @@ object MizarLang {
   case class PredSym(sym: Symbol) extends PredicateSymbol
   case object EqualitySym extends PredicateSymbol
 
-  case class AdjectiveArguments(termExps: List[TermExpression])
-
   case class TypeChangeList(eqVarList: List[EquatingOrVarIdent])
   sealed trait EquatingOrVarIdent
   case class Equating(varIden: VariableIdentifier, equalsTerm: TermExpression)
         extends EquatingOrVarIdent
   case class VariableIdentifier(iden: Identifier) extends EquatingOrVarIdent
+        with TermExpression
 
   case class PrivateFunctorPattern(funcIden: FunctorIdentifier,
         optExp: List[List[TypeExpression]])
@@ -317,11 +309,6 @@ object MizarLang {
 
 
 ///// 5th layer expansion
-  case class Variables(varIdenList: List[VariableIdentifier])
-
-  case class QualifiedSegment(vars: Variables, qual: Qualification)
-  case class Qualification(typExp: TypeExpression)
-
   sealed trait ReasoningItem
   sealed trait SkeletonItem extends ReasoningItem
 
@@ -343,20 +330,127 @@ object MizarLang {
 
 
 ///////////////////////       Expressions       //////////////////////////////
+  sealed trait FormulaExpression
+  case object Contradiction extends FormulaExpression
+  case object Thesis extends FormulaExpression
+  case class BracketedFormExpr(formExpr: FormulaExpression) extends FormulaExpression
+  sealed trait AtomicFormulaExpression extends FormulaExpression
+  sealed trait QuantifiedFormulaExpression extends FormulaExpression
+  case class ConjunctedFormExpr(firstExpr: FormulaExpression,
+        secondExpr: FormulaExpression) extends FormulaExpression
+  case class MultiConjunctedFormExpr(firstExpr: FormulaExpression,
+        lastExpr: FormulaExpression) extends FormulaExpression
+  case class DisjunctedFormExpr(firstExpr: FormulaExpression,
+        secondExpr: FormulaExpression) extends FormulaExpression
+  case class MultiDisjunctedFormExpr(firstExpr: FormulaExpression,
+        lastExpr: FormulaExpression) extends FormulaExpression
+  case class ImplicativeFormExpr(antecedent: FormulaExpression,
+        consequent: FormulaExpression) extends FormulaExpression
+  case class IffFormExpr(firstExpr: FormulaExpression,
+        secondExpr: FormulaExpression) extends FormulaExpression
+  case class NegativeFormExpr(formExpr: FormulaExpression) extends FormulaExpression
 
 
+  case class BunchOfTermExpAndSymbol(firstOptExps: List[TermExpressionList],
+        predSym: PredicateSymbol, secondOptExps: List[TermExpressionList],
+        symExpsList: List[PredSymAndTermExps]) extends AtomicFormulaExpression
+  case class PredSymAndTermExps(predSym: PredicateSymbol, termExps: TermExpressionList)
+  case class PredIdenTermExps(iden: PredicateIdentifier,
+        optTermExps: List[TermExpressionList]) extends AtomicFormulaExpression
+  case class TermExpIsAjectives(termExp: TermExpression, adjList: List[Adjective])
+        extends AtomicFormulaExpression
+  case class TermExpIsTypeExp(termExp: TermExpression, typExp: TypeExpression)
+        extends AtomicFormulaExpression
 
 
+  case class QualVarsAndFormExp(qualVars: QualifiedVariables, formExpr: FormulaExpression)
+        extends QuantifiedFormulaExpression
+  case class BunchOfQualVarsAndExps(qualVars: QualifiedVariables,
+        optFormExp: List[FormulaExpression], formOrquanExp: FormulaOrQuantified)
+        extends QuantifiedFormulaExpression
+  sealed trait FormulaOrQuantified
+  case class Formula(formExpr: FormulaExpression) extends FormulaOrQuantified
+  case class Quantified(quanExpr: QuantifiedFormulaExpression) extends FormulaOrQuantified
 
 
-///// defining for compilation. Comment out as their original defitions gets defined.
-  case class TypeExpression()
-  case class TermExpression()
+  sealed trait QualifiedVariables
+  case class ImpQualVariables(vars: Variables) extends QualifiedVariables
+  case class ExpQualVariables(qualSegs: List[QualifiedSegment])
+        extends QualifiedVariables
+  case class BothQualVariables(impVar: ImpQualVariables, expVar: ExpQualVariables)
+        extends QualifiedVariables
 
-  case class StructureTypeExpression()
+
+  case class QualifiedSegment(vars: Variables, qual: Qualification)
+  case class Qualification(typExp: TypeExpression)
 
 
+  case class Variables(varIdenList: List[VariableIdentifier])
 
-  case class FormulaExpression()
+
+  sealed trait TypeExpression extends TermExpression
+  case class AdjClusterAndTypeExp(adjcluster: List[Adjective], typExp: TypeExpression)
+        extends TypeExpression
+  sealed trait RadixType extends TypeExpression
+
+
+  case class ModeSymExps(modeSym: ModeSymbol, optTermExps: List[TermExpressionList])
+        extends RadixType
+  case class StructSymOptExps(structSym: Symbol, optTermExps: List[TermExpressionList])
+        extends RadixType
+
+
+  sealed trait StructureTypeExpression
+  case class WithAdjectives(adjcluster: List[Adjective], structSym: Symbol,
+        optTermExps: List[TermExpressionList]) extends StructureTypeExpression
+  case class WithoutAdjectives(structSym: Symbol, optTermExps: List[TermExpressionList])
+        extends StructureTypeExpression
+
+
+  sealed trait TermExpression extends Arguments
+  case class BracketedTermExp(termExp: TermExpression) extends TermExpression
+  case class ArguFuncSymbol(firstOptArgs: List[Arguments], funcSym: Symbol,
+        secondOptArgs: List[Arguments]) extends TermExpression
+  case class FuncBracketedTermExps(left: LeftFunctorBracket, termExps: TermExpressionList,
+        right: RightFunctorBracket) extends TermExpression
+  case class FuncIdenExpList(funcId: FunctorIdentifier,
+        optTermExps: List[TermExpressionList]) extends TermExpression
+  case class StructSymExps(structSym: Symbol, termExps: TermExpressionList)
+        extends TermExpression
+  case class StructSymExp(structSym: Symbol, termExp: TermExpression)
+        extends TermExpression
+  case class WithSentence(termExp: TermExpression, postquals: List[Postqualification],
+        sent: Sentence) extends TermExpression
+  case class WithoutSentence(termExp: TermExpression, postquals: List[Postqualification])
+        extends TermExpression
+  case class NumTerm(num: Numeral) extends TermExpression
+  case class TermAndTypeExp(termExp: TermExpression, typExp: TypeExpression)
+        extends TermExpression
+  case class SelectorSymExp(selectSym: SelectorSymbol, termExp: TermExpression)
+        extends TermExpression
+  case class SelectorSymbol(sym: Symbol) extends TermExpression
+  case object It extends TermExpression
+
+
+  sealed trait Arguments
+  case class TermExpressionList(termExps: List[TermExpression]) extends Arguments
+
+  case class AdjectiveArguments(termExps: List[TermExpression])
+
+  case class Postqualification(postSegs: List[PostqualiSegment])
+  case class PostqualiSegment(postqualVars: List[Identifier],
+        optTypeExp: List[TypeExpression])
+
+  sealed trait PrivateDefinitionParameter extends TermExpression
+  case object Para1 extends PrivateDefinitionParameter
+  case object Para2 extends PrivateDefinitionParameter
+  case object Para3 extends PrivateDefinitionParameter
+  case object Para4 extends PrivateDefinitionParameter
+  case object Para5 extends PrivateDefinitionParameter
+  case object Para6 extends PrivateDefinitionParameter
+  case object Para7 extends PrivateDefinitionParameter
+  case object Para8 extends PrivateDefinitionParameter
+  case object Para9 extends PrivateDefinitionParameter
+  case object Para10 extends PrivateDefinitionParameter
 
 }
