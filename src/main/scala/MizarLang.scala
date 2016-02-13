@@ -7,12 +7,11 @@ object MizarLang {
   case class Symbol(name: String)
   case class Numeral(name: String)
 
-
   case class Article(environ: EnvironmentDeclaration, text: TextProper)
 
 
 ////////////////////////        Environment         ////////////////////////
-  type EnvironmentDeclaration = List[Directive]
+  case class EnvironmentDeclaration(directives: List[Directive])
 
   sealed trait Directive{
       val files : List[FileName]
@@ -37,7 +36,7 @@ object MizarLang {
 /////////////////////////     TextProper  ////////////////////////////////
   case class TextProper(sections : List[Section]) extends AnyVal
 
-  type Section = List[TextItem]
+  case class Section(texts: List[TextItem])
 
   sealed trait TextItem
   case class Reservation(segments: List[ReservationSegment]) extends TextItem
@@ -49,9 +48,9 @@ object MizarLang {
 
 
 //// 1st layer expansion
-  case class ReservationSegment(reservedIdentifiers: List[Identifier],
+  case class ReservationSegment(reservedIden: ReservedIdentifiers,
                                 typ : TypeExpression)
-
+  case class ReservedIdentifiers(idents: List[Identifier])
 
   sealed trait DefinitionalBlock
   sealed trait DefinitionItem extends DefinitionalBlock
@@ -70,6 +69,7 @@ object MizarLang {
         toTerm: TermExpression, corrCond: CorrectConditions)
         extends RegistrationBlock
   sealed trait AuxiliaryItem extends RegistrationBlock with DefinitionItem
+        with ReasoningItem
 
 
   sealed trait NotationBlock
@@ -88,8 +88,8 @@ object MizarLang {
 
 
   case class StructureDefinition(ancestors: List[StructureTypeExpression],
-        structsymbol: Symbol, locusList: List[Locus],
-        fieldSegs: List[FieldSegment] ) extends Definition
+        structSymbol: Symbol, locusList: List[Locus],
+        fields: List[FieldSegment] ) extends Definition
   case class ModeDefinition(modePatt: ModePattern, modeBlock: ModeBlock,
         modeProp: List[ModeProperty] ) extends Definition with Redefinition
   case class FunctorDefinition(funPatt: FunctorPattern,
@@ -99,7 +99,7 @@ object MizarLang {
   case class PredicateDefinition(predPatt: PredicatePattern,
         defiens: List[Definiens], corrCond: CorrectConditions,
         predProp: List[PredicateProperty]) extends Definition with Redefinition
-  case class AttributeDefinition(attrPatt: AttributePattern, defiens: Definiens,
+  case class AttributeDefinition(attPatt: AttributePattern, defiens: Definiens,
         corrCond: CorrectConditions) extends Definition with Redefinition
 
 
@@ -122,9 +122,9 @@ object MizarLang {
   sealed trait PrivateDefinition extends AuxiliaryItem
 
 
-  case class AtrributeSynonym(patt: AttributePattern, forPatt: AttributePattern)
+  case class AttributeSynonym(patt: AttributePattern, forPatt: AttributePattern)
         extends NotationDeclaration
-  case class AtrributeAntonym(patt: AttributePattern, forPatt: AttributePattern)
+  case class AttributeAntonym(patt: AttributePattern, forPatt: AttributePattern)
         extends NotationDeclaration
   case class FunctorSynonym(patt: FunctorPattern, forPatt: FunctorPattern)
         extends NotationDeclaration
@@ -149,8 +149,8 @@ object MizarLang {
         typList: List[List[TypeExpression]], spec: Specification)
         extends SchemeSegment
 
-  case class Reasoning(reasItems: List[ReasoningItems],
-        casesOrSupposeList: List[CasesOrSuppose])
+  case class Reasoning(reasItems: List[ReasoningItem],
+        casesOrSupposeList: List[CasesOrSuppose]) extends DiffuseConclusion
   sealed trait CasesOrSuppose{
     val just : SimpleJustification
   }
@@ -161,7 +161,7 @@ object MizarLang {
 
 
 ///// 3rd layer expansion
-  sealed trait Assumption
+  sealed trait Assumption extends SkeletonItem
   case class SingleAssump(prop: Proposition) extends Assumption
   case class CollectiveAssump(conds: Conditions) extends Assumption
   case class ExistentialAssump(qualVar: QualifiedVariables, optCond: List[Conditions])
@@ -180,7 +180,7 @@ object MizarLang {
         optjust: List[Justification]) extends ModeSubBlock
   case class ModeExpr(typExp: TypeExpression) extends ModeSubBlock
 
-  type ModeProperty = Justification
+  case class ModeProperty(just: Justification)
 
   sealed trait FunctorPattern
   case class FuncSymbolLoci(opt1: List[FunctorLoci], funcSym: Symbol,
@@ -188,7 +188,7 @@ object MizarLang {
   case class FuncBracketLoci(lBracket: LeftFunctorBracket, loci: List[Locus],
         rBracket: RightFunctorBracket) extends FunctorPattern
 
-  type Specification = TypeExpression
+  case class Specification(typExp: TypeExpression)
 
   sealed trait Definiens
   case class SimpleDefiniens(optLabel: List[Identifier], sentExp: SentOrTerm)
@@ -197,32 +197,34 @@ object MizarLang {
         partialList: List[PartialDefiniens], optSentExp: List[SentOrTerm])
         extends Definiens
 
-  type CorrectCondition = Justification
+  case class CorrectCondition(just: Justification)
 
-  type FunctorProperty = Justification
+  case class FunctorProperty(just: Justification)
 
   case class PredicatePattern(opt1loci: List[List[Locus]], predSym: PredicateSymbol,
         opt2loci: List[List[Locus]])
 
-  type PredicateProperty = Justification
+  case class PredicateProperty(just: Justification)
 
-  case class AttributePattern(locus: Locus, optloci: List[List[Locus]],
+  case class AttributePattern(locus: Locus, optloci: AttributeLoci,
         attSym: Symbol)
+  case class AttributeLoci(loci: Loci)
 
   case class Adjective(optArg: List[AdjectiveArguments], attSym: Symbol)
 
   case class DiffuseStatement(optLabel: List[Identifier], reason: Reasoning)
-        extends Statement
+        extends Statement with DiffuseConclusion
   sealed trait LinkableStatement extends Statement
 
   case class CompactStatement(prop: Proposition, just: Justification)
-        extends LinkableStatement
+        extends LinkableStatement with CompStatOrIterEq
   case class ChoiceStatement(qualVar: QualifiedVariables, conds: Conditions,
         just: SimpleJustification) extends LinkableStatement
   case class TypeChangingStatement(changeList: TypeChangeList,
         typExp: TypeExpression, just: SimpleJustification) extends LinkableStatement
   case class IterativeEquality(optLabel: List[Identifier], termExp: TermExpression,
         equalsTerm: List[TermAndJustification]) extends LinkableStatement
+        with CompStatOrIterEq
   case class TermAndJustification(term: TermExpression, just: SimpleJustification)
 
 
@@ -251,7 +253,7 @@ object MizarLang {
   case class BothQualVariables(impVar: ImpQualVariables, expVar: ExpQualVariables)
         extends QualifiedVariables
 
-  type Conditions = List[Proposition]
+  case class Conditions(props: List[Proposition])
 
   sealed trait ModeSymbol
   case class ModeSym(sym: Symbol) extends ModeSymbol
@@ -282,11 +284,11 @@ object MizarLang {
 
   case class AdjectiveArguments(termExps: List[TermExpression])
 
-  type TypeChangeList = List[EquatingOrVarIdent]
+  case class TypeChangeList(eqVarList: List[EquatingOrVarIdent])
   sealed trait EquatingOrVarIdent
   case class Equating(varIden: VariableIdentifier, equalsTerm: TermExpression)
         extends EquatingOrVarIdent
-  case class VariableIdentifier(varIden: Identifier) extends EquatingOrVarIdent
+  case class VariableIdentifier(iden: Identifier) extends EquatingOrVarIdent
 
   case class PrivateFunctorPattern(funcIden: FunctorIdentifier,
         optExp: List[List[TypeExpression]])
@@ -297,7 +299,7 @@ object MizarLang {
   case class PredicateIdentifier(iden: Identifier)
 
 
-  type References = List[Reference]
+  case class References(refers: List[Reference])
   sealed trait Reference
   case class LocalReference(label: Identifier) extends Reference
   case class LibraryReference(articleName: FileName, index: List[ThmDefNum])
@@ -314,17 +316,46 @@ object MizarLang {
 
 
 
+///// 5th layer expansion
+  case class Variables(varIdenList: List[VariableIdentifier])
+
+  case class QualifiedSegment(vars: Variables, qual: Qualification)
+  case class Qualification(typExp: TypeExpression)
+
+  sealed trait ReasoningItem
+  sealed trait SkeletonItem extends ReasoningItem
+
+  case class Generalization(qualVar: QualifiedVariables, conds: Conditions)
+        extends SkeletonItem
+  sealed trait Conclusion extends SkeletonItem
+  case class Exemplification(examples: List[Example]) extends SkeletonItem
+
+  sealed trait CompStatOrIterEq extends Conclusion
+  sealed trait DiffuseConclusion extends Conclusion
+
+  sealed trait Example
+  case class TermExprExample(termExp: TermExpression) extends Example
+  case class VarIdenAndTermExpr(varIden: VariableIdentifier, termExp: TermExpression)
+        extends Example
+
+
+
+
+
+///////////////////////       Expressions       //////////////////////////////
+
+
+
+
 
 
 ///// defining for compilation. Comment out as their original defitions gets defined.
   case class TypeExpression()
   case class TermExpression()
-  case class QualifiedSegment()
-  case class Variables()
 
   case class StructureTypeExpression()
 
-  case class ReasoningItems()
+
 
   case class FormulaExpression()
 
