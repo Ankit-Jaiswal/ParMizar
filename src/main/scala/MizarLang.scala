@@ -1,5 +1,3 @@
-import org.parboiled2._
-
 object MizarLang {
 
   case class Identifier(name: String)
