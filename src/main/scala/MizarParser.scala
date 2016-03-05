@@ -16,7 +16,7 @@ class MizarParser(val input: ParserInput) extends Parser {
 ///////////////////////////////   tokens   ///////////////////////////////////
   def numeral:Rule1[Numeral] = rule{ capture(oneOrMore(CharPredicate.Digit)) ~>
         ((s: String) => Numeral(s)) }
-  def filename: Rule1[FileName] = rule { capture(oneOrMore(CharPredicate.AlphaNum | '_')) ~>
+  def filename: Rule1[FileName] = rule { capture(oneOrMore(CharPredicate.AlphaNum | "_")) ~>
         ((s: String) => FileName(s)) }
   def hiddenSymbol = rule {
     "," | ";"	| ":"	| "(" | ")" | "["	| "]"	| "{" | "}"	| "=" | "<>" | "&" |
@@ -24,7 +24,7 @@ class MizarParser(val input: ParserInput) extends Parser {
     "$9" | "$10" | "(#" | "#)"
   }
   def identifier: Rule1[Identifier] = rule { !hiddenSymbol ~ !numeral ~
-        capture(oneOrMore(CharPredicate.AlphaNum | '_' | ''')) ~>
+        capture(oneOrMore(CharPredicate.AlphaNum | "_" | "'") ~>
         ((s: String) => Identifier(s)) }
   def symbol: Rule1[Symbol] = rule { !numeral ~ capture(noneOf(" " ++ "\t" ++ "\n")) ~>
         ((s: String) => Symbol(s))}
