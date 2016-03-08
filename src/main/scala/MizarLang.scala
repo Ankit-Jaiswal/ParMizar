@@ -42,7 +42,7 @@ object MizarLang {
   case class RegistrationItem(regisList: List[RegistrationBlock]) extends TextItem
   case class NotationItem(noteList: List[NotationBlock]) extends TextItem
   case class Theorem(thm: CompactStatement) extends TextItem
-  case class SchemeItem(schemeList: List[SchemeBlock]) extends TextItem
+  case class SchemeItem(schblock: SchemeBlock) extends TextItem
 
 
 //// 1st layer expansion
@@ -171,13 +171,12 @@ object MizarLang {
 
   case class ModePattern(modeSym: ModeSymbol, optloci: List[List[Locus]])
 
-  case class ModeBlock(specs: List[Specification], defiens: List[Definiens],
-        subblock: ModeSubBlock)
-  sealed trait ModeSubBlock
+  sealed trait ModeBlock
+  case class ModeCondBlock(optSpec: List[Specification], optDefinien: List[Definiens],
+        corrCond: CorrectConditions) extends ModeBlock
+  case class ModeTypExpBlock(typExp: TypeExpression) extends ModeBlock
   case class CorrectConditions(condList: List[CorrectCondition],
-        optjust: List[Justification]) extends ModeSubBlock
-  case class ModeExpr(typExp: TypeExpression) extends ModeSubBlock
-
+        optjust: List[Justification])
   case class ModeProperty(just: Justification)
 
   sealed trait FunctorPattern
