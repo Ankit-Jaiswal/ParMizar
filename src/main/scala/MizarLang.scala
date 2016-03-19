@@ -228,7 +228,7 @@ object MizarLang {
   case class ConstantDefinition(eqList: List[Equating]) extends PrivateDefinition
   case class PrivateFunctorDefinition(patt: PrivateFunctorPattern,
         term: TermExpression) extends PrivateDefinition
-  case class PrivatePredicateDefinition(patt: PrivatePreicatePattern,
+  case class PrivatePredicateDefinition(patt: PrivatePredicatePattern,
         sent: Sentence) extends PrivateDefinition
 
 
@@ -283,7 +283,7 @@ object MizarLang {
         optExp: List[List[TypeExpression]])
   case class FunctorIdentifier(iden: Identifier)
 
-  case class PrivatePreicatePattern(predIden: PredicateIdentifier,
+  case class PrivatePredicatePattern(predIden: PredicateIdentifier,
         optExp: List[List[TypeExpression]])
   case class PredicateIdentifier(iden: Identifier)
 
