@@ -42,7 +42,7 @@ class ArticleParser(val input: ParserInput) extends Parser {
   def filename = rule{ !rw ~ !symbol ~ &(CharPredicate.Alpha) ~
       oneOrMore(CharPredicate.AlphaNum | '_') ~ endMarker }
   def identifier = rule{ !rw ~ !symbol ~ !numeral ~
-      oneOrMore(CharPredicate.AlphaNum | '_' | ''') ~ endMarker }
+      oneOrMore(CharPredicate.AlphaNum | '_' | "'") ~ endMarker }
 
 
 
