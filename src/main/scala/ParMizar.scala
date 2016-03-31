@@ -9,7 +9,7 @@ ABOUT: This is the main file of the project, which will parses sample.miz
 
 import scala.io.Source
 
-object runParMizar {
+object ParMizar {
   val filelines = Source.fromFile("sample.miz").getLines.toList
   var input = "" // could be error prone.
   for(line <- filelines) {

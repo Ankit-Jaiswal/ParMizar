@@ -1,8 +1,8 @@
 /*
 ABOUT : This includes the parser grammar for parsing a mizar article.
 
-STATUS: Giving Stackoverflow error at runtime.
-POSSIBLE REASON:  Left recursion.
+STATUS: Left recursion removed. Able to parse smallest article in MML i.e. hidden.miz
+To do:  Extracting notations and constructors from "imported" files.
 */
 
 import scala.io.Source
@@ -18,26 +18,26 @@ class ArticleParser(val input: ParserInput) extends Parser {
   def comment = rule{ "::" ~ zeroOrMore(noneOf("\n")) }
   implicit def wspStr(s: String) = rule{ str(s) ~ zeroOrMore(ws | comment | nl) }
 
+  // rw := reserved_words  and   sym := symbol
   val rwList = Source.fromFile("reserved_words.txt").getLines.toList
-  def rwRule(n: Int): Rule0 = n match {
-    case 0 => rule{ rwList(0) }
-    case _ => rule{ rwRule(n-1) | rwList(n) }
-  }
-  val symList = SymbolExtractor.symbolUsed
-  def symbolRule(n: Int): Rule0 = n match {
-    case 0 => rule{ symList(0) }
-    case _ => rule{ symbolRule(n-1) | symList(n) }
+  val symList = SymbolExtractor.symbolUsed.toList
+
+  def listToRule(xs: List[String]) : Rule0 = {
+    def loop(acc: Rule0, n: Int): Rule0 = {
+      if (n==0) acc
+      else loop( rule{xs(n)|acc} , n-1 )
+    }
+    loop( xs(0), xs.length-1 )
   }
 
-  def rw = rwRule(rwList.length-1) // rw := reserved_words
-
+  def rw = listToRule(rwList)
   def spSym = rule{ ":" | ";" | "," | "(#" | "#)" | "(" | ")" |
       "[" | "]" | "{" | "}" | "=" | ".=" | "&" | "->" }
   def endMarker = rule{ oneOrMore(ws | nl) | &(spSym) }
 
 
 ///////////////////////////////   tokens   ///////////////////////////////////
-  def symbol = symbolRule(symList.length-1)
+  def symbol = listToRule(symList)
   def numeral = rule{ !'0' ~ oneOrMore(CharPredicate.Digit) ~ endMarker }
   def filename = rule{ !rw ~ !symbol ~ &(CharPredicate.Alpha) ~
       oneOrMore(CharPredicate.AlphaNum | '_') ~ endMarker }
@@ -91,7 +91,7 @@ class ArticleParser(val input: ParserInput) extends Parser {
   def defItem = rule{ lociDecl | permissiveAssump | auxiliaryItem }
   def notationDecl = rule{ attributeSynonym | attributeAntonym | functorSynonym |
         modeSynonym | predicateSynonym | predicateAntonym }
-  def lociDecl = rule { "let" ~ qualifiedVars ~ optional("such" ~ conditions) }
+  def lociDecl = rule { "let" ~ qualifiedVars ~ optional("such" ~ conditions) ~ ";" }
   def permissiveAssump = rule{ assumption }
   def definition = rule{ structDef | modeDef | funcDef | predDef | attrDef }
   def redefinition = rule{ "redefine" ~ ( modeDef | funcDef | predDef | attrDef ) }
@@ -249,12 +249,24 @@ class ArticleParser(val input: ParserInput) extends Parser {
 
 
 /////////////////////////////   Expressions   /////////////////////////////////
-  def formulaExpr: Rule0 = rule{ "(" ~ formulaExpr ~ ")" |
-      atomicFormulaExpr | quantifiedFormulaExpr |
-      formulaExpr ~ "&" ~ formulaExpr | formulaExpr ~ "&" ~ "..." ~ "&" ~ formulaExpr |
-      formulaExpr ~ "or" ~ formulaExpr | formulaExpr ~ "or" ~ "..." ~ "or" ~ formulaExpr |
-      formulaExpr ~ "implies" ~ formulaExpr | formulaExpr ~ "iff" ~ formulaExpr |
-      "not" ~ formulaExpr | "contradiction" | "thesis" }
+  def formulaExpr: Rule0 = rule{ "(" ~ formulaExpr ~ ")" ~ formulaExpr0 |
+      atomicFormulaExpr ~ formulaExpr0 | quantifiedFormulaExpr ~ formulaExpr0 |
+      //formulaExpr ~ "&" ~ formulaExpr |
+      //formulaExpr ~ "&" ~ "..." ~ "&" ~ formulaExpr |
+      //formulaExpr ~ "or" ~ formulaExpr |
+      //formulaExpr ~ "or" ~ "..." ~ "or" ~ formulaExpr |
+      //formulaExpr ~ "implies" ~ formulaExpr |
+      //formulaExpr ~ "iff" ~ formulaExpr |
+      "not" ~ formulaExpr ~ formulaExpr0 |
+      "contradiction" ~ formulaExpr0 | "thesis" ~ formulaExpr0 }
+
+  def formulaExpr0: Rule0 = rule{ "&" ~ formulaExpr ~ formulaExpr0 |
+      "&" ~ "..." ~ "&" ~ formulaExpr ~ formulaExpr0 |
+      "or" ~ formulaExpr ~ formulaExpr0 |
+      "or" ~ "..." ~ "or" ~ formulaExpr ~ formulaExpr0 |
+      "implies" ~ formulaExpr ~ formulaExpr0 |
+      "iff" ~ formulaExpr ~ formulaExpr0 |
+      MATCH }
 
   def atomicFormulaExpr: Rule0 = rule{ optional(termExprList) ~
       optional(("does"|"do") ~ "not") ~ predicateSymbol ~ optional(termExprList) ~
@@ -267,37 +279,47 @@ class ArticleParser(val input: ParserInput) extends Parser {
       optional("st" ~ formulaExpr) ~ ("holds" ~ formulaExpr | quantifiedFormulaExpr) |
       "ex" ~ qualifiedVars ~ "st" ~ formulaExpr }
 
-  def qualifiedVars = rule{ implicitlyQualVars | explicitlyQualVars |
-      explicitlyQualVars ~ "," ~ implicitlyQualVars }
+  def qualifiedVars = rule{ explicitlyQualVars ~ "," ~ implicitlyQualVars |
+      explicitlyQualVars | implicitlyQualVars }
   def implicitlyQualVars = rule{ oneOrMore(variableIden).separatedBy(",") }
   def explicitlyQualVars = rule{ oneOrMore(qualifiedSegment).separatedBy(",") }
   def qualifiedSegment = rule{ oneOrMore(variableIden).separatedBy(",") ~
       qualification }
   def qualification = rule{ ("being" | "be") ~ typeExpr }
 
-  def typeExpr: Rule0 = rule{ "(" ~ radixType ~ ")" | zeroOrMore(adjective) ~ typeExpr |
+  def typeExpr: Rule0 = rule{ "(" ~ radixType ~ ")" |
+      //zeroOrMore(adjective) ~ typeExpr |
+      oneOrMore(adjective) ~ typeExpr |
       radixType }
+
   def structTypeExp = rule{ "(" ~ symbol ~ optional("over" ~ termExprList) ~ ")" |
       zeroOrMore(adjective) ~ symbol ~ optional("over" ~ termExprList) }
   def radixType = rule{ modeSymbol ~ optional("of" ~ termExprList) |
       symbol ~ optional("over" ~ termExprList) }
 
-  def termExpr: Rule0 = rule{ "it" |
-      "the" ~ symbol |
-      numeral |
-      variableIden |
-      privateDefParameter |
-      "(" ~ termExprList ~ ")" |
-      leftFuncBracket ~ termExprList ~ rightFuncBracket |
-      funcIdentifier ~ "(" ~ optional(termExprList) ~ ")" |
-      symbol ~ "(#" ~ termExprList ~ "#)" |
-      "the" ~ symbol ~ "of" ~ termExpr |
-      "{" ~ termExpr ~ zeroOrMore(postqualification) ~ ":" ~ sentence ~ "}" |
-      "the" ~ "set" ~ "of" ~ "all" ~ termExpr ~ zeroOrMore(postqualification) |
-      termExpr ~ "qua" ~ typeExpr |
-      "the" ~ symbol ~ "of" ~ termExpr |
-      "the" ~ typeExpr |
-      optional(arguments) ~ symbol ~ optional(arguments) }
+  def termExpr: Rule0 = rule{ "it" ~ termExpr0 |
+      "the" ~ symbol ~ termExpr0 |
+      numeral ~ termExpr0 |
+      variableIden ~ termExpr0 |
+      privateDefParameter ~ termExpr0 |
+      "(" ~ termExprList ~ ")" ~ termExpr0 |
+      leftFuncBracket ~ termExprList ~ rightFuncBracket ~ termExpr0 |
+      funcIdentifier ~ "(" ~ optional(termExprList) ~ ")" ~ termExpr0 |
+      symbol ~ "(#" ~ termExprList ~ "#)" ~ termExpr0 |
+      "the" ~ symbol ~ "of" ~ termExpr ~ termExpr0 |
+      "{" ~ termExpr ~ zeroOrMore(postqualification) ~ ":" ~ sentence ~ "}" ~ termExpr0 |
+      "the" ~ "set" ~ "of" ~ "all" ~ termExpr ~ zeroOrMore(postqualification) ~ termExpr0 |
+      //termExpr ~ "qua" ~ typeExpr |
+      "the" ~ symbol ~ "of" ~ termExpr ~ termExpr0 |
+      "the" ~ typeExpr ~ termExpr0 |
+      //optional(arguments) ~ symbol ~ optional(arguments) |
+      symbol ~ optional(arguments) ~ termExpr0 |
+      "(" ~ termExprList ~ ")" ~ termExpr0 }
+
+  def termExpr0: Rule0 = rule{ "qua" ~ typeExpr ~ termExpr0 |
+      symbol ~ optional(arguments) ~ termExpr0 |
+      MATCH }
+
   def termExprList = rule{ oneOrMore(termExpr).separatedBy(",") }
 
   def arguments = rule{ "(" ~ termExprList ~ ")" | termExpr }
