@@ -20,24 +20,25 @@ class ArticleParser(val input: ParserInput) extends Parser {
 
   // rw := reserved_words  and   sym := symbol
   val rwList = Source.fromFile("reserved_words.txt").getLines.toList
-  val symList = SymbolExtractor.symbolUsed.toList
+  val symList = SymbolExtractor.symbolUsed.flatten.map(_.toString).toList
 
   def listToRule(xs: List[String]) : Rule0 = {
     def loop(acc: Rule0, n: Int): Rule0 = {
       if (n==0) acc
       else loop( rule{xs(n)|acc} , n-1 )
     }
-    loop( xs(0), xs.length-1 )
+    if (xs.length>0) loop( rule{xs(0)}, xs.length-1 ) else rule{MISMATCH}
   }
 
   def rw = listToRule(rwList)
+  def hiddenSym = rule{ "object" | "<>" | "in" | "strict" }
   def spSym = rule{ ":" | ";" | "," | "(#" | "#)" | "(" | ")" |
       "[" | "]" | "{" | "}" | "=" | ".=" | "&" | "->" }
   def endMarker = rule{ oneOrMore(ws | nl) | &(spSym) }
 
 
 ///////////////////////////////   tokens   ///////////////////////////////////
-  def symbol = listToRule(symList)
+  def symbol = rule{ hiddenSym | listToRule(symList) }
   def numeral = rule{ !'0' ~ oneOrMore(CharPredicate.Digit) ~ endMarker }
   def filename = rule{ !rw ~ !symbol ~ &(CharPredicate.Alpha) ~
       oneOrMore(CharPredicate.AlphaNum | '_') ~ endMarker }
