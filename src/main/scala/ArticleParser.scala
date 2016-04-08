@@ -19,15 +19,15 @@ class ArticleParser(val input: ParserInput) extends Parser {
   implicit def wspStr(s: String) = rule{ str(s) ~ zeroOrMore(ws | comment | nl) }
 
   // rw := reserved_words  and   sym := symbol
-  val rwList = Source.fromFile("reserved_words.txt").getLines.toList
-  val symList = SymbolExtractor.symbolUsed.flatten.map(_.toString).toList
+  val rwList = Source.fromFile("reserved_words.txt").getLines.toList.reverse
+  val symList = SymbolExtractor.symbolUsed.flatten.map(_.toString).toList.sorted.reverse
 
   def listToRule(xs: List[String]) : Rule0 = {
     def loop(acc: Rule0, n: Int): Rule0 = {
       if (n==0) acc
-      else loop( rule{xs(n)|acc} , n-1 )
+      else loop( rule{xs(n-1)|acc} , n-1 )
     }
-    if (xs.length>0) loop( rule{xs(0)}, xs.length-1 ) else rule{MISMATCH}
+    if (xs.length>0) loop( rule{xs.last}, xs.length-1 ) else rule{MISMATCH}
   }
 
   def rw = listToRule(rwList)
@@ -55,10 +55,10 @@ class ArticleParser(val input: ParserInput) extends Parser {
 
   def environDecl = rule{ "environ" ~ zeroOrMore(directive) }
   def directive = rule{ vocDirective | libDirective | reqDirective }
-  def vocDirective = rule{ "vocabularies" ~ oneOrMore(filename).separatedBy(", ") ~ ";" }
+  def vocDirective = rule{ "vocabularies" ~ oneOrMore(filename).separatedBy(",") ~ ";" }
   def libDirective = rule{
     ( "notations" | "constructors" | "registrations" | "definitions" | "expansions"
-    | "equalities" | "theorems" | "schemes" ) ~ oneOrMore(filename).separatedBy(", ") ~ ";"
+    | "equalities" | "theorems" | "schemes" ) ~ oneOrMore(filename).separatedBy(",") ~ ";"
   }
   def reqDirective = rule{ "requirements" ~ oneOrMore(filename).separatedBy(", ") ~ ";" }
 
@@ -81,8 +81,6 @@ class ArticleParser(val input: ParserInput) extends Parser {
   def reserveSegment = rule{ reserveIden ~ "for" ~ typeExpr }
   def reserveIden = rule{ oneOrMore(identifier).separatedBy(",") }
   def definitionalBlock = rule{ defItem | definition | redefinition }
-
-
   def registrationBlock = rule{ lociDecl | clusterRegistration | identifyRegistration |
         propertyRegistration | reductionRegistration | auxiliaryItem }
   def notationBlock = rule{ lociDecl | notationDecl }
