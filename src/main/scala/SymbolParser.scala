@@ -8,24 +8,12 @@ import org.parboiled2._
 import Parser.DeliveryScheme.Throw
 
 class SymbolParser(val input: ParserInput) extends Parser{
-  val vocFileList = VocFileExtractor.vocFileUsed.flatten.map(_.toString).toList
+  def getVoc(filename: String) = rule{ find("#"++filename++"\n") ~
+      zeroOrMore(noneOf("\n")) ~ '\n' ~ getSymbols }
+  def find(s: String) = rule{ zeroOrMore(!s ~ ANY) ~ s }
 
-  def inputLine = rule{ getSymbols(vocFileList) ~ zeroOrMore(ANY) ~ EOI }
-  def getSymbols(fileList: List[String]) = {
-    if (vocFileList.length == 0) rule{ push(Seq()) }
-    else rule{ vocFileList.length.times(findfile ~ symbols) }
-  }
-  def findfile = rule{ zeroOrMore(!filename ~ ANY) ~ filename ~ zeroOrMore(noneOf("\n")) ~ '\n' }
-  def filename = rule{ '#' ~ listToRule(vocFileList) }
-  def listToRule(xs: List[String]): Rule0 = {
-    def loop(acc: Rule0, n: Int): Rule0 = {
-      if (n==0) acc
-      else loop( rule{ xs(n-1)++"\n" | acc } , n-1 )
-    }
-    loop( rule{xs.last++"\n"} , xs.length-1 )
-  }
-
-  def symbols = rule{ oneOrMore(qualifier ~ representation ~ zeroOrMore(noneOf("\n"))).separatedBy('\n') }
+  def getSymbols = rule{ oneOrMore(qualifier ~ representation ~
+      zeroOrMore(noneOf("\n"))).separatedBy('\n') }
   def qualifier = rule{ anyOf("ROMGUVKL") }
   def representation = rule{ capture(oneOrMore(noneOf(" " ++ "\t" ++ "\n"))) }
 
@@ -38,6 +26,7 @@ object SymbolExtractor {
     input = input + line + "\n"
   }
 
-  val symbolUsed = new SymbolParser(input).inputLine.run()
+  val vocFileList = VocFileExtractor.vocFileUsed.flatten.map(_.toString).toList
+  val symbolUsed = vocFileList.map(filename => new SymbolParser(input).getVoc(filename).run())
 
 }
