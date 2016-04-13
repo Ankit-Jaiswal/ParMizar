@@ -3,7 +3,6 @@ ABOUT:  This includes the parser grammar for extracting symbols from mml.vct by 
         vocabulary_file_list(which is extracted from vocabulary directive of an article).
 */
 
-import scala.io.Source
 import org.parboiled2._
 import Parser.DeliveryScheme.Throw
 
@@ -20,12 +19,7 @@ class SymbolParser(val input: ParserInput) extends Parser{
 }
 
 object SymbolExtractor {
-  val filelines = Source.fromFile("mml.vct").getLines.toList
-  var input = "" // could be error prone.
-  for(line <- filelines) {
-    input = input + line + "\n"
-  }
-
+  val input = scala.io.Source.fromFile("mml.vct").getLines mkString "\n"
   val vocFileList = VocFileExtractor.vocFileUsed.flatten.map(_.toString).toList
   val symbolUsed = vocFileList.map(filename => new SymbolParser(input).getVoc(filename).run())
 

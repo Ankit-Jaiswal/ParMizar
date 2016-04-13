@@ -5,7 +5,6 @@ STATUS: Left recursion removed. Able to parse smallest article in MML i.e. hidde
 To do:  Extracting notations and constructors from "imported" files.
 */
 
-import scala.io.Source
 import scala.language.implicitConversions
 import org.parboiled2._
 import MizarLang._
@@ -19,7 +18,7 @@ class ArticleParser(val input: ParserInput) extends Parser {
   implicit def wspStr(s: String) = rule{ str(s) ~ zeroOrMore(ws | comment | nl) }
 
   // rw := reserved_words  and   sym := symbol
-  val rwList = Source.fromFile("reserved_words.txt").getLines.toList.reverse
+  val rwList = scala.io.Source.fromFile("reserved_words.txt").getLines.toList.reverse
   val symList = SymbolExtractor.symbolUsed.flatten.map(_.toString).toList.sorted.reverse
 
   def listToRule(xs: List[String]) : Rule0 = {

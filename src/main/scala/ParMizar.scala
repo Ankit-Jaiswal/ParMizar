@@ -6,16 +6,9 @@ ABOUT: This is the main file of the project, which will parses sample.miz
         3. Parsing the article.
 */
 
-
-import scala.io.Source
-
 object ParMizar {
-  val filelines = Source.fromFile("sample.miz").getLines.toList
-  var input = "" // could be error prone.
-  for(line <- filelines) {
-    input = input + line + "\n"
-  }
-
+  val input = scala.io.Source.fromFile("sample.miz").getLines mkString "\n"
+  
   def main(args: Array[String]): Unit = {
     println(new ArticleParser(input).InputLine.run())
   }
