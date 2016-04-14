@@ -29,7 +29,7 @@ class ArticleParser(val input: ParserInput) extends Parser {
     if (xs.length>0) loop( rule{xs.last}, xs.length-1 ) else rule{MISMATCH}
   }
 
-  def rw = listToRule(rwList)
+  def rw = rule{ listToRule(rwList) ~ endMarker }
   def hiddenSym = rule{ "object" | "<>" | "in" | "strict" }
   def spSym = rule{ ":" | ";" | "," | "(#" | "#)" | "(" | ")" |
       "[" | "]" | "{" | "}" | "=" | ".=" | "&" | "->" }
@@ -37,9 +37,9 @@ class ArticleParser(val input: ParserInput) extends Parser {
 
 
 ///////////////////////////////   tokens   ///////////////////////////////////
-  def symbol = rule{ hiddenSym | listToRule(symList) }
+  def symbol = rule{ ( hiddenSym | listToRule(symList) ) ~ endMarker }
   def numeral = rule{ !'0' ~ oneOrMore(CharPredicate.Digit) ~ endMarker }
-  def filename = rule{ !rw ~ !symbol ~ &(CharPredicate.Alpha) ~
+  def filename = rule{ &(CharPredicate.Alpha) ~
       oneOrMore(CharPredicate.AlphaNum | '_') ~ endMarker }
   def identifier = rule{ !rw ~ !symbol ~ !numeral ~
       oneOrMore(CharPredicate.AlphaNum | '_' | "'") ~ endMarker }
