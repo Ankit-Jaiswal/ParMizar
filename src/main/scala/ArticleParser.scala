@@ -19,7 +19,8 @@ class ArticleParser(val input: ParserInput) extends Parser {
 
   // rw := reserved_words  and   sym := symbol
   val rwList = scala.io.Source.fromFile("reserved_words.txt").getLines.toList.reverse
-  val symList = SymbolExtractor.symbolUsed.flatten.map(_.toString).toList.sorted.reverse
+  val hidden = List("Mobject", "R<>", "Rin", "Vstrict")
+  val symList = SymbolExtractor.symbolUsed.flatten.map(_.toString).toList ++ hidden
 
   def listToRule(xs: List[String]) : Rule0 = {
     def loop(acc: Rule0, n: Int): Rule0 = {
@@ -29,20 +30,31 @@ class ArticleParser(val input: ParserInput) extends Parser {
     if (xs.length>0) loop( rule{xs.last}, xs.length-1 ) else rule{MISMATCH}
   }
 
-  def rw = rule{ listToRule(rwList) ~ endMarker }
-  def hiddenSym = rule{ "object" | "<>" | "in" | "strict" }
+  def rw = rule{ listToRule(rwList) ~ endM }
   def spSym = rule{ ":" | ";" | "," | "(#" | "#)" | "(" | ")" |
       "[" | "]" | "{" | "}" | "=" | ".=" | "&" | "->" }
-  def endMarker = rule{ oneOrMore(ws | nl) | &(spSym) }
+  def endM = rule{ oneOrMore(ws | nl) | &(spSym) }
 
 
 ///////////////////////////////   tokens   ///////////////////////////////////
-  def symbol = rule{ ( hiddenSym | listToRule(symList) ) ~ endMarker }
-  def numeral = rule{ !'0' ~ oneOrMore(CharPredicate.Digit) ~ endMarker }
+  def symbol = rule{ ( structSymbol | selectorSymbol | funcSymbol | modeSymbol |
+      predicateSymbol | attributeSymbol | leftFuncBracket | rightFuncBracket ) ~ endM }
+
+  def structSymbol = listToRule(symList.filter(_.head == 'G').map(_.drop(1)).sorted.reverse)
+  def selectorSymbol = listToRule(symList.filter(_.head == 'U').map(_.drop(1)).sorted.reverse)
+  def funcSymbol = listToRule(symList.filter(_.head == 'O').map(_.drop(1)).sorted.reverse)
+  def modeSymbol = rule{ listToRule(symList.filter(_.head == 'M').map(_.drop(1)).sorted.reverse) | "set" }
+  def predicateSymbol = rule{ listToRule(symList.filter(_.head == 'R').map(_.drop(1)).sorted.reverse) | "=" }
+  def attributeSymbol = listToRule(symList.filter(_.head == 'V').map(_.drop(1)).sorted.reverse)
+  def leftFuncBracket = rule{ listToRule(symList.filter(_.head == 'K').map(_.drop(1)).sorted.reverse) | "{" | "[" }
+  def rightFuncBracket = rule{ listToRule(symList.filter(_.head == 'L').map(_.drop(1)).sorted.reverse) | "}" | "]" }
+
+
+  def numeral = rule{ !'0' ~ oneOrMore(CharPredicate.Digit) ~ endM }
   def filename = rule{ &(CharPredicate.Alpha) ~
-      oneOrMore(CharPredicate.AlphaNum | '_') ~ endMarker }
-  def identifier = rule{ !rw ~ !symbol ~ !numeral ~
-      oneOrMore(CharPredicate.AlphaNum | '_' | "'") ~ endMarker }
+      oneOrMore(CharPredicate.AlphaNum | '_') ~ endM }
+  def identifier = rule{ !(rw|symbol|numeral) ~
+      oneOrMore(CharPredicate.AlphaNum | '_' | "'") ~ endM }
 
 
 
@@ -93,20 +105,19 @@ class ArticleParser(val input: ParserInput) extends Parser {
   def permissiveAssump = rule{ assumption }
   def definition = rule{ structDef | modeDef | funcDef | predDef | attrDef }
   def redefinition = rule{ "redefine" ~ ( modeDef | funcDef | predDef | attrDef ) }
-  def structDef = rule{ "struct" ~ optional("(" ~ ancestors ~ ")") ~ symbol ~
+  def structDef = rule{ "struct" ~ optional("(" ~ ancestors ~ ")") ~ structSymbol ~
         optional("over" ~ loci) ~ "(#" ~ fields ~ "#)" ~ ";" }
   def ancestors = rule{ oneOrMore(structTypeExp).separatedBy(",") }
   def loci = rule{ oneOrMore(locus).separatedBy(",") }
   def fields = rule{ oneOrMore(fieldSegment).separatedBy(",") }
   def locus = rule{ variableIden }
   def variableIden = rule{ identifier }
-  def fieldSegment = rule{ oneOrMore(symbol).separatedBy(",") ~ specification }
+  def fieldSegment = rule{ oneOrMore(selectorSymbol).separatedBy(",") ~ specification }
   def specification = rule{ "->" ~ typeExpr }
   def modeDef = rule{ "mode" ~ modePattern ~
     ( optional(specification) ~ optional("means" ~ definiens) ~ ";" ~ correctConditions |
     "is" ~ typeExpr ~ ";" ) ~ zeroOrMore(modeProperty) }
   def modePattern = rule{ modeSymbol ~ optional("of" ~ loci) }
-  def modeSymbol = rule{ symbol | "set" }
   def modeSynonym = rule{ "synonym" ~ modePattern ~ "for" ~ modePattern ~ ";"}
   def definiens = rule{ simpleDefiniens | conditionalDefiniens }
   def simpleDefiniens = rule{ optional(":" ~ identifier ~ ":") ~ (sentence | termExpr) }
@@ -119,14 +130,12 @@ class ArticleParser(val input: ParserInput) extends Parser {
   def funcDef = rule{ "func" ~ functorPattern ~ optional(specification) ~
       optional(("means" | "equals") ~ definiens) ~ ";" ~ correctConditions ~
       zeroOrMore(functorProperty) }
-  def functorPattern = rule{ optional(functorloci) ~ symbol ~ optional(functorloci) |
+  def functorPattern = rule{ optional(functorloci) ~ funcSymbol ~ optional(functorloci) |
       leftFuncBracket ~ loci ~ rightFuncBracket }
   def functorProperty = rule{ ( "commutativity" | "idempotence" | "involutiveness" |
       "projectivity" ) ~ justification ~ ";" }
   def functorSynonym = rule{ "synonym" ~ functorPattern ~ "for" ~ functorPattern ~ ";" }
   def functorloci = rule{ locus | "(" ~ loci ~ ")" }
-  def leftFuncBracket = rule{ symbol | "{" | "[" }
-  def rightFuncBracket = rule{ symbol | "}" | "]" }
 
   def predDef = rule{ "pred" ~ predicatePattern ~ optional("means" ~ definiens) ~
       ";" ~ correctConditions ~ zeroOrMore(predicateProperty)  }
@@ -135,14 +144,12 @@ class ArticleParser(val input: ParserInput) extends Parser {
       "reflexivity" | "irreflexivity") ~ justification ~ ";" }
   def predicateSynonym = rule{ "synonym" ~ predicatePattern ~ "for" ~ predicatePattern ~ ";" }
   def predicateAntonym = rule{ "antonym" ~ predicatePattern ~ "for" ~ predicatePattern ~ ";" }
-  def predicateSymbol = rule{ symbol | "=" }
 
   def attrDef = rule{ "attr" ~ attributePattern ~ "means" ~ definiens ~ ";" ~ correctConditions }
   def attributePattern = rule{ locus ~ "is" ~ optional(attributeLoci) ~ attributeSymbol }
   def attributeSynonym = rule{ "synonym" ~ attributePattern ~ "for" ~ attributePattern ~ ";" }
   def attributeAntonym = rule{ "antonym" ~ attributePattern ~ "for" ~ attributePattern ~ ";" }
   def attributeLoci = rule{ loci | "(" ~ loci ~ ")" }
-  def attributeSymbol = rule{ symbol }
 
   def clusterRegistration = rule{ existentialRegis | conditionalRegis | functorialRegis }
   def existentialRegis = rule{ "cluster" ~ zeroOrMore(adjective) ~ "for" ~
@@ -290,32 +297,32 @@ class ArticleParser(val input: ParserInput) extends Parser {
       oneOrMore(adjective) ~ typeExpr |
       radixType }
 
-  def structTypeExp = rule{ "(" ~ symbol ~ optional("over" ~ termExprList) ~ ")" |
-      zeroOrMore(adjective) ~ symbol ~ optional("over" ~ termExprList) }
+  def structTypeExp = rule{ "(" ~ structSymbol ~ optional("over" ~ termExprList) ~ ")" |
+      zeroOrMore(adjective) ~ structSymbol ~ optional("over" ~ termExprList) }
   def radixType = rule{ modeSymbol ~ optional("of" ~ termExprList) |
-      symbol ~ optional("over" ~ termExprList) }
+      structSymbol ~ optional("over" ~ termExprList) }
 
   def termExpr: Rule0 = rule{ "it" ~ termExpr0 |
-      "the" ~ symbol ~ termExpr0 |
+      "the" ~ selectorSymbol ~ termExpr0 |
       numeral ~ termExpr0 |
       variableIden ~ termExpr0 |
       privateDefParameter ~ termExpr0 |
       "(" ~ termExprList ~ ")" ~ termExpr0 |
       leftFuncBracket ~ termExprList ~ rightFuncBracket ~ termExpr0 |
       funcIdentifier ~ "(" ~ optional(termExprList) ~ ")" ~ termExpr0 |
-      symbol ~ "(#" ~ termExprList ~ "#)" ~ termExpr0 |
-      "the" ~ symbol ~ "of" ~ termExpr ~ termExpr0 |
+      structSymbol ~ "(#" ~ termExprList ~ "#)" ~ termExpr0 |
+      "the" ~ structSymbol ~ "of" ~ termExpr ~ termExpr0 |
       "{" ~ termExpr ~ zeroOrMore(postqualification) ~ ":" ~ sentence ~ "}" ~ termExpr0 |
       "the" ~ "set" ~ "of" ~ "all" ~ termExpr ~ zeroOrMore(postqualification) ~ termExpr0 |
       //termExpr ~ "qua" ~ typeExpr |
-      "the" ~ symbol ~ "of" ~ termExpr ~ termExpr0 |
+      //"the" ~ symbol ~ "of" ~ termExpr ~ termExpr0 |
       "the" ~ typeExpr ~ termExpr0 |
       //optional(arguments) ~ symbol ~ optional(arguments) |
-      symbol ~ optional(arguments) ~ termExpr0 |
+      funcSymbol ~ optional(arguments) ~ termExpr0 |
       "(" ~ termExprList ~ ")" ~ termExpr0 }
 
   def termExpr0: Rule0 = rule{ "qua" ~ typeExpr ~ termExpr0 |
-      symbol ~ optional(arguments) ~ termExpr0 |
+      funcSymbol ~ optional(arguments) ~ termExpr0 |
       MATCH }
 
   def termExprList = rule{ oneOrMore(termExpr).separatedBy(",") }

@@ -8,13 +8,13 @@ import Parser.DeliveryScheme.Throw
 
 class SymbolParser(val input: ParserInput) extends Parser{
   def getVoc(filename: String) = rule{ find("#"++filename++"\n") ~
-      zeroOrMore(noneOf("\n")) ~ '\n' ~ getSymbols }
+      zeroOrMore(noneOf("\n")) ~ '\n' ~ symbolDef }
   def find(s: String) = rule{ zeroOrMore(!s ~ ANY) ~ s }
 
-  def getSymbols = rule{ oneOrMore(qualifier ~ representation ~
-      zeroOrMore(noneOf("\n"))).separatedBy('\n') }
+  def symbolDef = rule{ oneOrMore(getSymbol ~ zeroOrMore(noneOf("\n"))).separatedBy('\n') }
+  def getSymbol = rule{ capture(qualifier ~ representation) }
   def qualifier = rule{ anyOf("ROMGUVKL") }
-  def representation = rule{ capture(oneOrMore(noneOf(" " ++ "\t" ++ "\n"))) }
+  def representation = rule{ oneOrMore(noneOf(" " ++ "\t" ++ "\n")) }
 
 }
 
