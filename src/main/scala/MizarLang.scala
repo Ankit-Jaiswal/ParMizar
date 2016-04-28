@@ -43,6 +43,8 @@ object MizarLang {
   case class NotationItem(noteList: List[NotationBlock]) extends TextItem
   case class Theorem(thm: CompactStatement) extends TextItem
   case class SchemeItem(schblock: SchemeBlock) extends TextItem
+  sealed trait AuxiliaryItem extends RegistrationBlock with DefinitionItem
+        with ReasoningItem with TextItem
 
 
 //// 1st layer expansion
@@ -66,8 +68,6 @@ object MizarLang {
   case class ReductionRegistration(reduceTerm: TermExpression,
         toTerm: TermExpression, corrCond: CorrectConditions)
         extends RegistrationBlock
-  sealed trait AuxiliaryItem extends RegistrationBlock with DefinitionItem
-        with ReasoningItem
 
 
   sealed trait NotationBlock
