@@ -331,12 +331,12 @@ object MizarLang {
   case class NegativeFormExpr(formExpr: FormulaExpression) extends FormulaExpression
 
 
-  case class BunchOfTermExpAndSymbol(firstOptExps: List[TermExpressionList],
-        predSym: Symbol, secondOptExps: List[TermExpressionList],
+  case class BunchOfTermExpAndSymbol(firstOptExps: Option[TermExpressionList],
+        predSym: Symbol, secondOptExps: Option[TermExpressionList],
         symExpsList: List[PredSymAndTermExps]) extends AtomicFormulaExpression
   case class PredSymAndTermExps(predSym: Symbol, termExps: TermExpressionList)
   case class PredIdenTermExps(iden: PredicateIdentifier,
-        optTermExps: List[TermExpressionList]) extends AtomicFormulaExpression
+        optTermExps: Option[TermExpressionList]) extends AtomicFormulaExpression
   case class TermExpIsAjectives(termExp: TermExpression, adjList: List[Adjective])
         extends AtomicFormulaExpression
   case class TermExpIsTypeExp(termExp: TermExpression, typExp: TypeExpression)
@@ -346,7 +346,7 @@ object MizarLang {
   case class QualVarsAndFormExp(qualVars: QualifiedVariables, formExpr: FormulaExpression)
         extends QuantifiedFormulaExpression
   case class BunchOfQualVarsAndExps(qualVars: QualifiedVariables,
-        optFormExp: List[FormulaExpression], formOrquanExp: FormulaOrQuantified)
+        optFormExp: Option[FormulaExpression], formOrquanExp: FormulaOrQuantified)
         extends QuantifiedFormulaExpression
   sealed trait FormulaOrQuantified
   case class Formula(formExpr: FormulaExpression) extends FormulaOrQuantified
@@ -354,14 +354,14 @@ object MizarLang {
 
 
   sealed trait QualifiedVariables
-  case class ImpQualVariables(vars: Variables) extends QualifiedVariables
+  case class ImpQualVariables(vars: List[VariableIdentifier]) extends QualifiedVariables
   case class ExpQualVariables(qualSegs: List[QualifiedSegment])
         extends QualifiedVariables
-  case class BothQualVariables(impVar: ImpQualVariables, expVar: ExpQualVariables)
+  case class BothQualVariables(expVar: ExpQualVariables, impVar: ImpQualVariables)
         extends QualifiedVariables
 
 
-  case class QualifiedSegment(vars: Variables, qual: Qualification)
+  case class QualifiedSegment(vars: List[VariableIdentifier], qual: Qualification)
   case class Qualification(typExp: TypeExpression)
 
 
@@ -374,27 +374,27 @@ object MizarLang {
   sealed trait RadixType extends TypeExpression
   case class TypExpressionList(list: List[TypeExpression])
 
-  case class ModeSymExps(modeSym: Symbol, optTermExps: List[TermExpressionList])
+  case class ModeSymOptExps(modeSym: Symbol, optTermExps: Option[TermExpressionList])
         extends RadixType
-  case class StructSymOptExps(structSym: Symbol, optTermExps: List[TermExpressionList])
+  case class StructSymOptExps(structSym: Symbol, optTermExps: Option[TermExpressionList])
         extends RadixType
 
 
   sealed trait StructureTypeExpression
   case class WithAdjectives(adjcluster: List[Adjective], structSym: Symbol,
-        optTermExps: List[TermExpressionList]) extends StructureTypeExpression
-  case class WithoutAdjectives(structSym: Symbol, optTermExps: List[TermExpressionList])
+        optTermExps: Option[TermExpressionList]) extends StructureTypeExpression
+  case class WithoutAdjectives(structSym: Symbol, optTermExps: Option[TermExpressionList])
         extends StructureTypeExpression
 
 
   sealed trait TermExpression extends Arguments
   case class BracketedTermExp(termExp: TermExpression) extends TermExpression
-  case class ArguFuncSymbol(firstOptArgs: List[Arguments], funcSym: Symbol,
-        secondOptArgs: List[Arguments]) extends TermExpression
+  case class ArguFuncSymbol(firstOptArgs: Option[Arguments], funcSym: Symbol,
+        secondOptArgs: Option[Arguments]) extends TermExpression
   case class FuncBracketedTermExps(left: Symbol, termExps: TermExpressionList,
         right: Symbol) extends TermExpression
   case class FuncIdenExpList(funcId: FunctorIdentifier,
-        optTermExps: List[TermExpressionList]) extends TermExpression
+        optTermExps: Option[TermExpressionList]) extends TermExpression
   case class StructSymExps(structSym: Symbol, termExps: TermExpressionList)
         extends TermExpression
   case class StructSymExp(structSym: Symbol, termExp: TermExpression)
@@ -406,7 +406,7 @@ object MizarLang {
   case class NumTerm(num: Numeral) extends TermExpression
   case class TermAndTypeExp(termExp: TermExpression, typExp: TypeExpression)
         extends TermExpression
-  case class SelectorSymExp(selectSym: SelectorSymbol, termExp: TermExpression)
+  case class SelectorSymExp(selectSym: Symbol, termExp: TermExpression)
         extends TermExpression
   case class SelectorSymbol(sym: Symbol) extends TermExpression
   case object It extends TermExpression
@@ -415,11 +415,11 @@ object MizarLang {
   sealed trait Arguments
   case class TermExpressionList(termExps: List[TermExpression]) extends Arguments
 
-  case class AdjectiveArguments(termExps: List[TermExpression])
+  case class AdjectiveArguments(termExps: TermExpressionList)
 
   case class Postqualification(postSegs: List[PostqualiSegment])
   case class PostqualiSegment(postqualVars: List[Identifier],
-        optTypeExp: List[TypeExpression])
+        optTypeExp: Option[TypeExpression])
 
   sealed trait PrivateDefinitionParameter extends TermExpression
   case object Para1 extends PrivateDefinitionParameter
