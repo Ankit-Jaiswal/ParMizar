@@ -1,7 +1,7 @@
-:: Some Properties of Functions Modul and Signum
-::  by Jan Popio{\l}ek
+:: Built-in Concepts
+::  by Andrzej Trybulec
 ::
-:: Received June 21, 1989
+:: Received January 1, 1989
 :: Copyright (c) 1990-2015 Association of Mizar Users
 ::           (Stowarzyszenie Uzytkownikow Mizara, Bialystok, Poland).
 :: This code can be distributed under the GNU General Public Licence
@@ -14,15 +14,25 @@
 
 environ
 
- vocabularies NUMBERS, XREAL_0, COMPLEX1, CARD_1, XXREAL_0, ARYTM_1, ARYTM_3,
-      RELAT_1, SQUARE_1, REAL_1, ABSVALUE, INT_1, NAT_1;
- notations ORDINAL1, NUMBERS, XCMPLX_0, XREAL_0, REAL_1, INT_1, COMPLEX1,
-      SQUARE_1, XXREAL_0;
- constructors REAL_1, SQUARE_1, COMPLEX1, INT_1, XXREAL_0;
- registrations XXREAL_0, XREAL_0, ORDINAL1, NAT_1, INT_1;
- requirements REAL, NUMERALS, SUBSET, ARITHM, BOOLE;
- theorems XCMPLX_0, XCMPLX_1, COMPLEX1, SQUARE_1, XREAL_1, XXREAL_0;
+begin
 
-begin :: Absolute value
+:: This article documents a part of the Mizar axiomatics - it shows how
+:: the primitives of set theory are introduced in the Mizar Mathematical
+:: Library.
+:: Please note that the notions defined here are not subject to standard
+:: verification, so the Mizar verifier and other utilities may report
+:: errors when processing this article.
 
-reserve x, y, z, r, s, t for Real;
+definition
+  mode object;
+end;
+
+definition
+  mode set -> object;
+end;
+
+definition let x,y be object;
+  pred x = y;
+  reflexivity;
+  symmetry;
+end;
