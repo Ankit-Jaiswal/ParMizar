@@ -9,7 +9,16 @@ import MizarLang._
 import org.parboiled2._
 import Parser.DeliveryScheme.Throw
 
-object ParMizar {
+case class ParMizar(filename: String) {
   val input = scala.io.Source.fromFile(filename).getLines mkString "\n"
-  def from(filename: String) = new ArticleParser(input).InputLine.run()
+  val tree = new ArticleParser(input).InputLine.run()
 }
+
+/*
+object ParMizar {
+  def main(args: Array[String]): Unit = {
+    val input = scala.io.Source.fromFile("sample.miz").getLines mkString "\n"
+    println(new ArticleParser(input).InputLine.run())
+  }
+}
+*/
