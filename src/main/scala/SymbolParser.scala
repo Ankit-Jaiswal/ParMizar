@@ -1,3 +1,5 @@
+package ParMizar
+
 /*
 ABOUT:  This includes the parser grammar for extracting symbols from mml.vct by refering to
         vocabulary_file_list(which is extracted from vocabulary directive of an article).

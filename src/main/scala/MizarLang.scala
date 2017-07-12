@@ -1,3 +1,5 @@
+package ParMizar
+
 object MizarLang {
 
   case class Identifier(name: String)

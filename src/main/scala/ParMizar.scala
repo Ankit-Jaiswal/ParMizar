@@ -1,3 +1,5 @@
+package ParMizar
+
 /*
 ABOUT: This is the main file of the project, which will parses sample.miz
         in three steps:

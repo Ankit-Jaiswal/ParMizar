@@ -1,3 +1,5 @@
+package ParMizar
+
 /*
 ABOUT: This include the parser grammar for extracting list of voc files
        form vocabulary directive of an article.

@@ -1,3 +1,4 @@
+package ParMizar
 /*
 ABOUT : This includes the parser grammar for parsing a mizar article.
 
